@@ -5,7 +5,11 @@ Clinical Decision Support Platform
 import sqlite3
 import os
 
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "clinical_platform.db")
+# Vercel serverless: filesystem is read-only except /tmp
+if os.environ.get("VERCEL"):
+    DB_PATH = "/tmp/clinical_platform.db"
+else:
+    DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "clinical_platform.db")
 
 
 def get_connection():
