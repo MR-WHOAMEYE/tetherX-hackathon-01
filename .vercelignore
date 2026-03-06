@@ -1,11 +1,8 @@
-# Exclude from Vercel backend deployment
-frontend/
-frontend/node_modules/
+# Exclude from Vercel deployment (non-essential directories)
 pages/
 styles/
 ml_models/
 iot/
 .git/
 __pycache__/
-*.md
 requirements-full.txt
