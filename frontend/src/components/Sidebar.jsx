@@ -1,119 +1,84 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
-    LayoutDashboard, Bot, Users, Stethoscope, HeartPulse, Activity,
+    LayoutDashboard, Bot, Users, HeartPulse,
     TrendingUp, Lightbulb, Pill, Search, BarChart3, Clock, CalendarCheck,
-    Building2, FileText, Settings, LogOut, ShieldCheck, Monitor, Radio,
-    ChevronDown, ChevronRight
+    Building2, FileText, Settings, LogOut, Monitor, Radio
 } from 'lucide-react'
 
+/* ── Role-specific navigation configuration ──
+   Each role sees ONLY the pages relevant to their dashboard.
+   Home (/) renders: Doctor → DoctorDashboard, Nurse → NurseDashboard, Patient → PatientPortal
+*/
 const NAV = {
     doctor: [
         { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-        {
-            label: 'Real-Time Intelligence', icon: Monitor, children: [
-                { label: 'Command Center', icon: Monitor, path: '/command-center' },
-                { label: 'Live Vitals', icon: Radio, path: '/live-vitals' },
-            ]
-        },
-        {
-            label: 'Clinical Tools', icon: Bot, children: [
-                { label: 'AI Clinical Copilot', icon: Bot, path: '/copilot' },
-                { label: 'Patient Management', icon: Users, path: '/patients' },
-                { label: 'Doctor Dashboard', icon: Stethoscope, path: '/doctor' },
-            ]
-        },
-        {
-            label: 'Clinical Intelligence', icon: HeartPulse, children: [
-                { label: 'Triage System', icon: HeartPulse, path: '/triage' },
-                { label: 'Risk Prediction', icon: TrendingUp, path: '/risk' },
-                { label: 'Recommendations', icon: Lightbulb, path: '/recommendations' },
-                { label: 'Drug Interactions', icon: Pill, path: '/drugs' },
-            ]
-        },
-        {
-            label: 'Analysis', icon: Search, children: [
-                { label: 'Case Similarity', icon: Search, path: '/similarity' },
-                { label: 'Treatment Outcomes', icon: BarChart3, path: '/outcomes' },
-                { label: 'Patient Timeline', icon: Clock, path: '/timeline' },
-                { label: 'Follow-Up Care', icon: CalendarCheck, path: '/followup' },
-            ]
-        },
-        {
-            label: 'Administration', icon: Building2, children: [
-                { label: 'Hospital Insights', icon: Building2, path: '/insights' },
-                { label: 'Reports', icon: FileText, path: '/reports' },
-                { label: 'Settings', icon: Settings, path: '/settings' },
-            ]
-        },
+        { type: 'divider' },
+        { type: 'section', label: 'Real-Time Intelligence' },
+        { label: 'Command Center', icon: Monitor, path: '/command-center' },
+        { label: 'Live Vitals', icon: Radio, path: '/live-vitals' },
+        { type: 'divider' },
+        { type: 'section', label: 'Clinical Tools' },
+        { label: 'AI Clinical Copilot', icon: Bot, path: '/copilot' },
+        { label: 'Patient Management', icon: Users, path: '/patients' },
+        { label: 'Triage System', icon: HeartPulse, path: '/triage' },
+        { type: 'divider' },
+        { type: 'section', label: 'Intelligence & Analysis' },
+        { label: 'Risk Prediction', icon: TrendingUp, path: '/risk' },
+        { label: 'Recommendations', icon: Lightbulb, path: '/recommendations' },
+        { label: 'Drug Interactions', icon: Pill, path: '/drugs' },
+        { label: 'Case Similarity', icon: Search, path: '/similarity' },
+        { label: 'Treatment Outcomes', icon: BarChart3, path: '/outcomes' },
+        { type: 'divider' },
+        { label: 'Reports', icon: FileText, path: '/reports' },
+        { label: 'Settings', icon: Settings, path: '/settings' },
     ],
     nurse: [
         { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-        {
-            label: 'Real-Time Intelligence', icon: Monitor, children: [
-                { label: 'Command Center', icon: Monitor, path: '/command-center' },
-                { label: 'Live Vitals', icon: Radio, path: '/live-vitals' },
-            ]
-        },
-        {
-            label: 'Patient Care', icon: Users, children: [
-                { label: 'Patient Management', icon: Users, path: '/patients' },
-                { label: 'Nurse Dashboard', icon: ShieldCheck, path: '/nurse' },
-            ]
-        },
-        {
-            label: 'Clinical Tools', icon: HeartPulse, children: [
-                { label: 'Triage System', icon: HeartPulse, path: '/triage' },
-                { label: 'Risk Prediction', icon: TrendingUp, path: '/risk' },
-                { label: 'Patient Timeline', icon: Clock, path: '/timeline' },
-                { label: 'Follow-Up Care', icon: CalendarCheck, path: '/followup' },
-            ]
-        },
-        {
-            label: 'Administration', icon: FileText, children: [
-                { label: 'Reports', icon: FileText, path: '/reports' },
-                { label: 'Settings', icon: Settings, path: '/settings' },
-            ]
-        },
+        { type: 'divider' },
+        { type: 'section', label: 'Real-Time Monitoring' },
+        { label: 'Command Center', icon: Monitor, path: '/command-center' },
+        { label: 'Live Vitals', icon: Radio, path: '/live-vitals' },
+        { type: 'divider' },
+        { type: 'section', label: 'Patient Care' },
+        { label: 'Patient Management', icon: Users, path: '/patients' },
+        { type: 'divider' },
+        { label: 'Reports', icon: FileText, path: '/reports' },
+        { label: 'Settings', icon: Settings, path: '/settings' },
     ],
     patient: [
-        { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+        { label: 'My Dashboard', icon: LayoutDashboard, path: '/' },
+        { type: 'divider' },
+        { type: 'section', label: 'My Health' },
         { label: 'Patient Portal', icon: Users, path: '/portal' },
         { label: 'My Timeline', icon: Clock, path: '/timeline' },
         { label: 'My Appointments', icon: CalendarCheck, path: '/followup' },
-        {
-            label: 'More', icon: FileText, children: [
-                { label: 'My Reports', icon: FileText, path: '/reports' },
-                { label: 'Settings', icon: Settings, path: '/settings' },
-            ]
-        },
+        { type: 'divider' },
+        { type: 'section', label: 'Account' },
+        { label: 'My Reports', icon: FileText, path: '/reports' },
+        { label: 'Settings', icon: Settings, path: '/settings' },
     ],
+}
+
+const ROLE_LABELS = {
+    doctor: 'Physician',
+    nurse: 'Nursing Staff',
+    patient: 'Patient',
+}
+
+const ROLE_COLORS = {
+    doctor: '#3BE1D1',
+    nurse: '#60A5FA',
+    patient: '#FBBF24',
 }
 
 export default function Sidebar({ user, onLogout }) {
     const location = useLocation()
     const navigate = useNavigate()
     const items = NAV[user.role] || NAV.patient
-    const [expanded, setExpanded] = useState({})
     const [visible, setVisible] = useState(false)
     const sidebarRef = useRef(null)
     const hoverZoneRef = useRef(null)
-
-    // Auto-expand the group that contains the current route
-    useEffect(() => {
-        const newExpanded = {}
-        items.forEach((item) => {
-            if (item.children) {
-                const hasActive = item.children.some(c => c.path === location.pathname)
-                if (hasActive) newExpanded[item.label] = true
-            }
-        })
-        setExpanded(prev => ({ ...prev, ...newExpanded }))
-    }, [location.pathname])
-
-    const toggleGroup = (label) => {
-        setExpanded(prev => ({ ...prev, [label]: !prev[label] }))
-    }
 
     const handleNavigate = (path) => {
         navigate(path)
@@ -149,52 +114,31 @@ export default function Sidebar({ user, onLogout }) {
                 </div>
 
                 <div className="sidebar-user">
-                    <div className="sidebar-user-avatar">{user.full_name[0]}</div>
+                    <div className="sidebar-user-avatar" style={{
+                        background: `${ROLE_COLORS[user.role] || '#67B8F7'}22`,
+                        color: ROLE_COLORS[user.role] || '#67B8F7',
+                    }}>
+                        {user.full_name[0]}
+                    </div>
                     <div className="sidebar-user-info">
                         <div className="sidebar-user-name">{user.full_name}</div>
-                        <div className="sidebar-user-role">{user.role}</div>
+                        <div className="sidebar-user-role" style={{ color: ROLE_COLORS[user.role] }}>
+                            {ROLE_LABELS[user.role] || user.role}
+                        </div>
                     </div>
                 </div>
 
                 <nav className="sidebar-nav">
                     {items.map((item, i) => {
-                        if (item.children) {
-                            // Group with sub-items
-                            const Icon = item.icon
-                            const isOpen = expanded[item.label]
-                            const hasActiveChild = item.children.some(c => c.path === location.pathname)
-                            return (
-                                <div key={i} className="sidebar-group">
-                                    <div
-                                        className={`sidebar-group-header ${hasActiveChild ? 'has-active' : ''}`}
-                                        onClick={() => toggleGroup(item.label)}
-                                    >
-                                        <Icon size={18} />
-                                        <span>{item.label}</span>
-                                        <div className={`sidebar-group-chevron ${isOpen ? 'open' : ''}`}>
-                                            <ChevronDown size={14} />
-                                        </div>
-                                    </div>
-                                    <div className={`sidebar-group-children ${isOpen ? 'expanded' : ''}`}>
-                                        {item.children.map((child, j) => {
-                                            const ChildIcon = child.icon
-                                            const active = location.pathname === child.path
-                                            return (
-                                                <div
-                                                    key={j}
-                                                    className={`sidebar-item sidebar-sub-item ${active ? 'active' : ''}`}
-                                                    onClick={() => handleNavigate(child.path)}
-                                                >
-                                                    <ChildIcon size={16} />
-                                                    <span>{child.label}</span>
-                                                </div>
-                                            )
-                                        })}
-                                    </div>
-                                </div>
-                            )
+                        // Divider
+                        if (item.type === 'divider') {
+                            return <div key={i} className="sidebar-divider" />
                         }
-                        // Top-level direct link
+                        // Section label
+                        if (item.type === 'section') {
+                            return <div key={i} className="sidebar-section-label">{item.label}</div>
+                        }
+                        // Nav item
                         const Icon = item.icon
                         const active = location.pathname === item.path
                         return (
@@ -220,3 +164,4 @@ export default function Sidebar({ user, onLogout }) {
         </>
     )
 }
+

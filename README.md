@@ -7,8 +7,6 @@
 ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python)
 ![SQLite](https://img.shields.io/badge/SQLite-Database-003B57?logo=sqlite)
 ![WebSocket](https://img.shields.io/badge/WebSocket-Real--Time-4A90D9)
-## 🚀 Live Demo
-- **Frontend Vercel Deployment:** [round 2](https://tether-x-hackathon-01.vercel.app/)
 
 ---
 
@@ -266,4 +264,3 @@ tetherX-hackathon-01/
 ---
 
 *Built with ❤️ by Zero Intercept Team for improved healthcare operations and patient outcomes.*
-

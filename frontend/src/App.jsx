@@ -24,6 +24,31 @@ import HospitalInsights from './pages/HospitalInsights'
 import Reports from './pages/Reports'
 import Settings from './pages/Settings'
 
+/* ── Role-based route access configuration ── */
+const ROLE_ROUTES = {
+  doctor: [
+    '/', '/command-center', '/live-vitals', '/copilot', '/patients',
+    '/triage', '/risk', '/recommendations', '/drugs',
+    '/similarity', '/outcomes', '/reports', '/settings',
+  ],
+  nurse: [
+    '/', '/command-center', '/live-vitals', '/patients',
+    '/reports', '/settings',
+  ],
+  patient: [
+    '/', '/portal', '/timeline', '/followup', '/reports', '/settings',
+  ],
+}
+
+/* ── Guard component — redirects if role doesn't have access ── */
+function RoleGuard({ user, path, children }) {
+  const allowed = ROLE_ROUTES[user.role] || ROLE_ROUTES.patient
+  if (!allowed.includes(path)) {
+    return <Navigate to="/" replace />
+  }
+  return children
+}
+
 export default function App() {
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('cliniq_user')
@@ -44,6 +69,20 @@ export default function App() {
     return <Login onLogin={handleLogin} />
   }
 
+  /* ── Role-specific home page component ── */
+  const HomeComponent = () => {
+    switch (user.role) {
+      case 'doctor':
+        return <DoctorDashboard />
+      case 'nurse':
+        return <NurseDashboard />
+      case 'patient':
+        return <PatientPortal user={user} />
+      default:
+        return <Dashboard user={user} />
+    }
+  }
+
   return (
     <WebSocketProvider>
       <div className="app-layout">
@@ -51,25 +90,74 @@ export default function App() {
         <AlertNotification />
         <main className="main-content">
           <Routes>
-            <Route path="/" element={<Dashboard user={user} />} />
-            <Route path="/command-center" element={<CommandCenter />} />
-            <Route path="/live-vitals" element={<LiveVitalMonitor />} />
-            <Route path="/copilot" element={<ClinicalCopilot />} />
-            <Route path="/patients" element={<PatientManagement />} />
-            <Route path="/doctor" element={<DoctorDashboard />} />
-            <Route path="/nurse" element={<NurseDashboard />} />
-            <Route path="/portal" element={<PatientPortal user={user} />} />
-            <Route path="/triage" element={<Triage />} />
-            <Route path="/risk" element={<RiskPrediction />} />
-            <Route path="/recommendations" element={<Recommendations />} />
-            <Route path="/drugs" element={<DrugInteractions />} />
-            <Route path="/similarity" element={<CaseSimilarity />} />
-            <Route path="/outcomes" element={<TreatmentOutcomes />} />
-            <Route path="/timeline" element={<PatientTimeline />} />
-            <Route path="/followup" element={<FollowupCare />} />
-            <Route path="/insights" element={<HospitalInsights />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/settings" element={<Settings user={user} />} />
+            {/* Home — role-specific dashboard */}
+            <Route path="/" element={<HomeComponent />} />
+
+            {/* Doctor & Nurse shared routes */}
+            <Route path="/command-center" element={
+              <RoleGuard user={user} path="/command-center"><CommandCenter /></RoleGuard>
+            } />
+            <Route path="/live-vitals" element={
+              <RoleGuard user={user} path="/live-vitals"><LiveVitalMonitor /></RoleGuard>
+            } />
+            <Route path="/patients" element={
+              <RoleGuard user={user} path="/patients"><PatientManagement /></RoleGuard>
+            } />
+
+            {/* Doctor-only routes */}
+            <Route path="/copilot" element={
+              <RoleGuard user={user} path="/copilot"><ClinicalCopilot /></RoleGuard>
+            } />
+            <Route path="/doctor" element={
+              <RoleGuard user={user} path="/doctor"><DoctorDashboard /></RoleGuard>
+            } />
+            <Route path="/recommendations" element={
+              <RoleGuard user={user} path="/recommendations"><Recommendations /></RoleGuard>
+            } />
+            <Route path="/drugs" element={
+              <RoleGuard user={user} path="/drugs"><DrugInteractions /></RoleGuard>
+            } />
+            <Route path="/similarity" element={
+              <RoleGuard user={user} path="/similarity"><CaseSimilarity /></RoleGuard>
+            } />
+            <Route path="/outcomes" element={
+              <RoleGuard user={user} path="/outcomes"><TreatmentOutcomes /></RoleGuard>
+            } />
+            <Route path="/insights" element={
+              <RoleGuard user={user} path="/insights"><HospitalInsights /></RoleGuard>
+            } />
+
+            {/* Nurse-only route */}
+            <Route path="/nurse" element={
+              <RoleGuard user={user} path="/nurse"><NurseDashboard /></RoleGuard>
+            } />
+
+            {/* Patient-only route */}
+            <Route path="/portal" element={
+              <RoleGuard user={user} path="/portal"><PatientPortal user={user} /></RoleGuard>
+            } />
+
+            {/* Shared routes (all roles) */}
+            <Route path="/triage" element={
+              <RoleGuard user={user} path="/triage"><Triage /></RoleGuard>
+            } />
+            <Route path="/risk" element={
+              <RoleGuard user={user} path="/risk"><RiskPrediction /></RoleGuard>
+            } />
+            <Route path="/timeline" element={
+              <RoleGuard user={user} path="/timeline"><PatientTimeline /></RoleGuard>
+            } />
+            <Route path="/followup" element={
+              <RoleGuard user={user} path="/followup"><FollowupCare /></RoleGuard>
+            } />
+            <Route path="/reports" element={
+              <RoleGuard user={user} path="/reports"><Reports /></RoleGuard>
+            } />
+            <Route path="/settings" element={
+              <RoleGuard user={user} path="/settings"><Settings user={user} /></RoleGuard>
+            } />
+
+            {/* Catch-all — redirect to home */}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </main>
