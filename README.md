@@ -1,5 +1,3 @@
----
-
 ## 👥 Meet the Team
 <table>
   <tr>
@@ -15,7 +13,7 @@
         <img src="https://github.com/Akshaykumar-B.png" width="100px;" alt="Akshaykumar-B"/>
         <br /><sub><b>Akshaykumar-B</b></sub>
       </a>
-      <br />Team Associate
+      <br />Database Designer
     </td>
   </tr>
   <tr>
