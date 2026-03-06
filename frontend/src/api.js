@@ -1,4 +1,11 @@
-const API = 'http://localhost:8000/api';
+// Auto-detect environment
+const getApiUrl = () => {
+    if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL + '/api';
+    if (import.meta.env.DEV) return 'http://localhost:8000/api';
+    return '/api'; // Production fallback (same origin on Vercel)
+};
+
+const API = getApiUrl();
 
 async function request(url, options = {}) {
     const res = await fetch(`${API}${url}`, {

@@ -14,7 +14,17 @@ export function WebSocketProvider({ children }) {
     const connect = useCallback(() => {
         if (wsRef.current?.readyState === WebSocket.OPEN) return
 
-        const ws = new WebSocket('ws://localhost:8000/ws/events')
+        // Vercel serverless doesn't support WebSockets — use polling fallback
+        const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        if (!isDev) {
+            console.log('[WS] Production mode — WebSocket disabled, using polling fallback')
+            setIsConnected(false)
+            return
+        }
+
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+        const wsUrl = baseUrl.replace(/^http/, 'ws') + '/ws/events'
+        const ws = new WebSocket(wsUrl)
 
         ws.onopen = () => {
             setIsConnected(true)
