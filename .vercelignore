@@ -1,0 +1,8 @@
+# Exclude from Vercel deployment (non-essential directories)
+pages/
+styles/
+ml_models/
+iot/
+.git/
+__pycache__/
+requirements-full.txt
