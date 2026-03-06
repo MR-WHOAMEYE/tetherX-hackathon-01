@@ -543,6 +543,30 @@ async def startup_seed_risks():
         print(f"Startup seed error: {e}")
 
 
+# ── Real-Time Metrics Broadcast Loop ─────────────────────────────────────────
+@app.on_event("startup")
+async def start_metrics_broadcast_loop():
+    """Broadcast live hospital metrics every 30 seconds to all WS clients."""
+    async def broadcaster():
+        while True:
+            await asyncio.sleep(30)
+            try:
+                metrics = get_hospital_metrics()
+                active_alerts = get_active_alerts(50)
+                status_dist = get_patients_by_status()
+                await ws_manager.broadcast({
+                    "type": "metrics_update",
+                    "data": {
+                        "metrics": metrics,
+                        "alert_count": len(active_alerts),
+                        "status_distribution": status_dist,
+                    }
+                })
+            except Exception as e:
+                print(f"Metrics broadcast error: {e}")
+    asyncio.create_task(broadcaster())
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

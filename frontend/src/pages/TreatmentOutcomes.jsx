@@ -18,7 +18,7 @@ export default function TreatmentOutcomes() {
         finally { setLoading(false) }
     }
 
-    const getColor = (p) => p > 75 ? '#10B981' : p > 50 ? '#3B82F6' : p > 30 ? '#F59E0B' : '#EF4444'
+    const getColor = (p) => p > 75 ? '#00FF9D' : p > 50 ? '#00F0FF' : p > 30 ? '#FFC400' : '#FF0A54'
 
     return (
         <div className="animate-in">

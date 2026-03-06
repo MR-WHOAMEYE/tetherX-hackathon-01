@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
-import { Users, AlertTriangle, Activity, Clock, Stethoscope, TrendingUp } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Users, AlertTriangle, Activity, Clock, Stethoscope, TrendingUp, Wifi, WifiOff, RefreshCw } from 'lucide-react'
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { api } from '../api'
+import { useWebSocket } from '../context/WebSocketContext'
 
 const COLORS = { active: '#3B82F6', monitoring: '#F59E0B', critical: '#EF4444', discharged: '#10B981' }
 
@@ -10,12 +11,45 @@ export default function Dashboard({ user }) {
     const [statusDist, setStatusDist] = useState({})
     const [patients, setPatients] = useState([])
     const [loading, setLoading] = useState(true)
+    const [lastUpdated, setLastUpdated] = useState(null)
+    const { isConnected, subscribe, liveMetrics } = useWebSocket()
 
-    useEffect(() => {
+    const fetchData = useCallback(() => {
         Promise.all([api.getMetrics(), api.getStatusDistribution(), api.getPatients(null, null, 8)])
-            .then(([m, s, p]) => { setMetrics(m); setStatusDist(s); setPatients(p) })
+            .then(([m, s, p]) => {
+                setMetrics(m)
+                setStatusDist(s)
+                setPatients(p)
+                setLastUpdated(new Date())
+            })
             .finally(() => setLoading(false))
     }, [])
+
+    // Initial load
+    useEffect(() => { fetchData() }, [fetchData])
+
+    // React to live metrics broadcast from server (every 30s)
+    useEffect(() => {
+        if (!liveMetrics) return
+        setMetrics(liveMetrics.metrics)
+        setStatusDist(liveMetrics.status_distribution || {})
+        setLastUpdated(new Date())
+    }, [liveMetrics])
+
+    // WebSocket event subscription — refresh on vitals/alert events
+    useEffect(() => {
+        return subscribe('dashboard', (msg) => {
+            if (msg.type === 'vitals_update' || msg.type === 'alert' || msg.type === 'metrics_update') {
+                setTimeout(fetchData, 600)
+            }
+        })
+    }, [subscribe, fetchData])
+
+    // Polling fallback every 30 seconds
+    useEffect(() => {
+        const timer = setInterval(fetchData, 30000)
+        return () => clearInterval(timer)
+    }, [fetchData])
 
     if (loading) return <div className="loading-container"><div className="spinner" /><span>Loading dashboard...</span></div>
 
@@ -29,8 +63,24 @@ export default function Dashboard({ user }) {
         <div className="animate-in">
             {/* Hero Banner */}
             <div className="hero-banner">
-                <h1>Welcome back, {user.full_name}</h1>
-                <p>AI-powered clinical intelligence at your fingertips. Monitor patients, analyze risks, and make data-driven decisions.</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                        <h1>Welcome back, {user.full_name}</h1>
+                        <p>AI-powered clinical intelligence at your fingertips. Monitor patients, analyze risks, and make data-driven decisions.</p>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+                        <div className={`ws-status ${isConnected ? 'connected' : 'disconnected'}`}>
+                            {isConnected ? <Wifi size={14} /> : <WifiOff size={14} />}
+                            <span>{isConnected ? 'LIVE' : 'OFFLINE'}</span>
+                        </div>
+                        {lastUpdated && (
+                            <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <RefreshCw size={10} />
+                                {lastUpdated.toLocaleTimeString()}
+                            </div>
+                        )}
+                    </div>
+                </div>
                 {metrics && (
                     <div className="hero-stats">
                         <div className="hero-stat"><div className="hero-stat-value">{metrics.total_patients}</div><div className="hero-stat-label">Total Patients</div></div>

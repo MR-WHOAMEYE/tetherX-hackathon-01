@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
-import { TrendingUp, AlertTriangle, Activity, Clock } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { TrendingUp, AlertTriangle, Activity, Clock, Wifi, WifiOff } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts'
 import { api } from '../api'
+import { useWebSocket } from '../context/WebSocketContext'
 
 export default function RiskPrediction() {
     const [patients, setPatients] = useState([])
@@ -9,24 +10,46 @@ export default function RiskPrediction() {
     const [risk, setRisk] = useState(null)
     const [trend, setTrend] = useState([])
     const [loading, setLoading] = useState(false)
+    const [autoRefreshed, setAutoRefreshed] = useState(false)
+    const { isConnected, subscribe } = useWebSocket()
 
     useEffect(() => { api.getPatients(null, null, 100).then(setPatients) }, [])
 
-    const analyze = async () => {
+    const analyze = useCallback(async (silent = false) => {
         if (!selected) return
-        setLoading(true)
+        if (!silent) setLoading(true)
         try {
             const [r, t] = await Promise.all([api.getRisk(selected), api.getRiskTrend(selected)])
             setRisk(r); setTrend(t)
-        } finally { setLoading(false) }
-    }
+            if (silent) { setAutoRefreshed(true); setTimeout(() => setAutoRefreshed(false), 2500) }
+        } finally { if (!silent) setLoading(false) }
+    }, [selected])
 
-    const riskColor = (v) => v > 70 ? '#EF4444' : v > 50 ? '#EA580C' : v > 30 ? '#CA8A04' : '#10B981'
+    // Auto-refresh when vitals update for the selected patient
+    useEffect(() => {
+        return subscribe('risk-prediction', (msg) => {
+            if (msg.type === 'vitals_update' && msg.data?.patient_id === selected && selected) {
+                setTimeout(() => analyze(true), 1000)
+            }
+        })
+    }, [subscribe, selected, analyze])
+
+    const riskColor = (v) => v > 70 ? '#FF0A54' : v > 50 ? '#EA580C' : v > 30 ? '#CA8A04' : '#00FF9D'
 
     return (
         <div className="animate-in">
-            <div className="hero-banner"><h1><TrendingUp size={28} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 10 }} />Risk Prediction Engine</h1>
-                <p>Predictive analytics for patient deterioration, ICU admission probability, and complication risk assessment.</p></div>
+            <div className="hero-banner">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                        <h1><TrendingUp size={28} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 10 }} />Risk Prediction Engine</h1>
+                        <p>Predictive analytics for patient deterioration, ICU admission probability, and complication risk assessment.</p>
+                    </div>
+                    <div className={`ws-status ${isConnected ? 'connected' : 'disconnected'}`}>
+                        {isConnected ? <Wifi size={14} /> : <WifiOff size={14} />}
+                        <span>{isConnected ? 'LIVE' : 'OFFLINE'}</span>
+                    </div>
+                </div>
+            </div>
 
             <div className="card mb-24" style={{ padding: '16px 20px' }}>
                 <div className="flex gap-16 items-center">
@@ -34,10 +57,17 @@ export default function RiskPrediction() {
                         <option value="">Select a patient...</option>
                         {patients.map(p => <option key={p.patient_id} value={p.patient_id}>{p.patient_id} — {p.first_name} {p.last_name}</option>)}
                     </select>
-                    <button className="btn btn-primary" onClick={analyze} disabled={loading || !selected}>
+                    <button className="btn btn-primary" onClick={() => analyze(false)} disabled={loading || !selected}>
                         {loading ? 'Analyzing...' : '📈 Predict Risk'}
                     </button>
+                    {autoRefreshed && <span className="badge badge-success" style={{ animation: 'fadeIn 0.3s ease' }}>⚡ Auto-updated</span>}
                 </div>
+                {isConnected && selected && (
+                    <div className="text-xs text-muted mt-8" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#00FF9D', display: 'inline-block' }} />
+                        Risk score will auto-update when new vitals are recorded for this patient
+                    </div>
+                )}
             </div>
 
             {risk && (
@@ -63,10 +93,10 @@ export default function RiskPrediction() {
                             <div className="card-header"><div className="card-title"><Activity size={20} /><h3>Risk Trend (7 Days)</h3></div></div>
                             <ResponsiveContainer width="100%" height={250}>
                                 <AreaChart data={trend}>
-                                    <defs><linearGradient id="riskGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#3B82F6" stopOpacity={0.2} /><stop offset="95%" stopColor="#3B82F6" stopOpacity={0} /></linearGradient></defs>
+                                    <defs><linearGradient id="riskGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#00F0FF" stopOpacity={0.2} /><stop offset="95%" stopColor="#00F0FF" stopOpacity={0} /></linearGradient></defs>
                                     <XAxis dataKey="day" tick={{ fontSize: 12 }} /><YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
                                     <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #E2E8F0', fontSize: '0.85rem' }} />
-                                    <Area type="monotone" dataKey="risk" stroke="#3B82F6" fill="url(#riskGrad)" strokeWidth={2.5} />
+                                    <Area type="monotone" dataKey="risk" stroke="#00F0FF" fill="url(#riskGrad)" strokeWidth={2.5} />
                                 </AreaChart>
                             </ResponsiveContainer>
                         </div>

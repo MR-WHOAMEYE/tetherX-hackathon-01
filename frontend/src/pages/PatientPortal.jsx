@@ -19,17 +19,17 @@ export default function PatientPortal({ user }) {
 
             <div className="grid-3 mb-24">
                 <div className="stat-card animate-in stagger-1">
-                    <div className="stat-icon" style={{ background: '#EBF4FF', color: '#0A5EB5' }}><CalendarCheck size={22} /></div>
+                    <div className="stat-icon" style={{ background: 'rgba(0, 240, 255, 0.1)', color: '#00F0FF' }}><CalendarCheck size={22} /></div>
                     <div className="stat-value">{followups.length}</div>
                     <div className="stat-label">Upcoming Appointments</div>
                 </div>
                 <div className="stat-card animate-in stagger-2">
-                    <div className="stat-icon" style={{ background: '#D1FAE5', color: '#059669' }}><Clock size={22} /></div>
+                    <div className="stat-icon" style={{ background: 'rgba(0, 255, 157, 0.1)', color: '#00FF9D' }}><Clock size={22} /></div>
                     <div className="stat-value">Active</div>
                     <div className="stat-label">Treatment Status</div>
                 </div>
                 <div className="stat-card animate-in stagger-3">
-                    <div className="stat-icon" style={{ background: '#F3E8FF', color: '#7C3AED' }}><FileText size={22} /></div>
+                    <div className="stat-icon" style={{ background: 'rgba(139, 92, 246, 0.1)', color: '#8B5CF6' }}><FileText size={22} /></div>
                     <div className="stat-value">3</div>
                     <div className="stat-label">Available Reports</div>
                 </div>

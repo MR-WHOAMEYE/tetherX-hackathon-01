@@ -20,7 +20,7 @@ export default function DrugInteractions() {
     }
 
     const sevColor = { contraindicated: '#991B1B', severe: '#DC2626', moderate: '#EA580C', mild: '#CA8A04' }
-    const sevBg = { contraindicated: '#FEE2E2', severe: '#FEE2E2', moderate: '#FFF7ED', mild: '#FEFCE8' }
+    const sevBg = { contraindicated: 'rgba(255, 10, 84, 0.1)', severe: 'rgba(255, 10, 84, 0.1)', moderate: '#FFF7ED', mild: '#FEFCE8' }
     const sevBadge = { contraindicated: 'danger', severe: 'danger', moderate: 'warning', mild: 'warning' }
 
     return (

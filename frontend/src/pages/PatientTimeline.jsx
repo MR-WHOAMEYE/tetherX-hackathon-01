@@ -18,7 +18,7 @@ export default function PatientTimeline() {
     }
 
     const stageIcons = { registration: '📋', diagnosis: '🔬', treatment: '💊', monitoring: '📡', lab_result: '🧪', medication: '💉', consultation: '👨‍⚕️', discharge: '🏠' }
-    const stageColors = { registration: '#3B82F6', diagnosis: '#7C3AED', treatment: '#10B981', monitoring: '#F59E0B', lab_result: '#06B6D4', medication: '#EC4899', consultation: '#0A5EB5', discharge: '#10B981' }
+    const stageColors = { registration: '#00F0FF', diagnosis: '#8B5CF6', treatment: '#00FF9D', monitoring: '#FFC400', lab_result: '#06B6D4', medication: '#EC4899', consultation: '#00F0FF', discharge: '#00FF9D' }
 
     return (
         <div className="animate-in">
@@ -42,7 +42,7 @@ export default function PatientTimeline() {
                             <div className="card-header"><div className="card-title"><CheckCircle size={20} /><h3>Current Stage</h3></div>
                                 <span className="badge badge-primary">{timeline.current_stage.label}</span></div>
                             <div className="progress-bar" style={{ height: 12 }}>
-                                <div className="progress-bar-fill" style={{ width: `${timeline.current_stage.progress}%`, background: 'linear-gradient(90deg,#3B82F6,#06B6D4)' }} />
+                                <div className="progress-bar-fill" style={{ width: `${timeline.current_stage.progress}%`, background: 'linear-gradient(90deg,#00F0FF,#06B6D4)' }} />
                             </div>
                             <div className="flex justify-between mt-8 text-xs text-muted">
                                 <span>Registration</span><span>Diagnosis</span><span>Treatment</span><span>Monitoring</span><span>Recovery</span><span>Discharge</span>

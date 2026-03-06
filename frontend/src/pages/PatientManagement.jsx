@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
-import { Users, Search, Plus, Activity } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Users, Search, Plus, Activity, Wifi, WifiOff, RefreshCw } from 'lucide-react'
 import { api } from '../api'
+import { useWebSocket } from '../context/WebSocketContext'
 
 export default function PatientManagement() {
     const [patients, setPatients] = useState([])
@@ -8,26 +9,50 @@ export default function PatientManagement() {
     const [status, setStatus] = useState('all')
     const [tab, setTab] = useState('list')
     const [loading, setLoading] = useState(true)
+    const [lastUpdated, setLastUpdated] = useState(null)
     const [formData, setFormData] = useState({ first_name: '', last_name: '', age: 30, gender: 'Male', blood_type: 'O+', symptoms: [], allergies: [], medical_history: [] })
     const [expandedId, setExpandedId] = useState(null)
     const [vitals, setVitals] = useState({})
+    const [registerMsg, setRegisterMsg] = useState(null)
+    const { isConnected, subscribe } = useWebSocket()
 
     const ALL_SYMPTOMS = ['Chest pain', 'Shortness of breath', 'Headache', 'Dizziness', 'Nausea', 'Fatigue', 'Fever', 'Cough', 'Abdominal pain', 'Back pain', 'Joint pain', 'Swelling', 'Blurred vision', 'Numbness', 'Palpitations', 'Weight loss', 'Confusion', 'Seizures']
 
-    useEffect(() => { loadPatients() }, [status, search])
-
-    const loadPatients = () => {
+    const loadPatients = useCallback(() => {
         setLoading(true)
-        api.getPatients(status !== 'all' ? status : null, search || null, 100).then(setPatients).finally(() => setLoading(false))
-    }
+        api.getPatients(status !== 'all' ? status : null, search || null, 100)
+            .then(p => { setPatients(p); setLastUpdated(new Date()) })
+            .finally(() => setLoading(false))
+    }, [status, search])
+
+    useEffect(() => { loadPatients() }, [loadPatients])
+
+    // WS refresh when new patients registered or vitals updated
+    useEffect(() => {
+        return subscribe('patient-management', (msg) => {
+            if (msg.type === 'vitals_update' || msg.type === 'alert' || msg.type === 'metrics_update') {
+                setTimeout(loadPatients, 800)
+            }
+        })
+    }, [subscribe, loadPatients])
+
+    // 60-second polling fallback
+    useEffect(() => {
+        const timer = setInterval(loadPatients, 60000)
+        return () => clearInterval(timer)
+    }, [loadPatients])
 
     const handleRegister = async (e) => {
         e.preventDefault()
         try {
             const res = await api.createPatient(formData)
-            alert(`Patient registered: ${res.patient_id}`)
-            setTab('list'); loadPatients()
-        } catch (e) { alert('Error registering patient') }
+            setRegisterMsg({ type: 'success', text: `✅ Patient registered: ${res.patient_id}` })
+            setTimeout(() => setRegisterMsg(null), 5000)
+            setTab('list')
+            loadPatients()
+        } catch {
+            setRegisterMsg({ type: 'error', text: '❌ Error registering patient' })
+        }
     }
 
     const loadVitals = async (pid) => {
@@ -43,8 +68,25 @@ export default function PatientManagement() {
 
     return (
         <div className="animate-in">
-            <div className="hero-banner"><h1><Users size={28} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 10 }} />Patient Management</h1>
-                <p>Comprehensive patient record management. Register, search, and manage patient data.</p></div>
+            <div className="hero-banner">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                        <h1><Users size={28} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 10 }} />Patient Management</h1>
+                        <p>Comprehensive patient record management. Register, search, and manage patient data.</p>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+                        <div className={`ws-status ${isConnected ? 'connected' : 'disconnected'}`}>
+                            {isConnected ? <Wifi size={14} /> : <WifiOff size={14} />}
+                            <span>{isConnected ? 'LIVE' : 'OFFLINE'}</span>
+                        </div>
+                        {lastUpdated && (
+                            <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <RefreshCw size={10} /> {lastUpdated.toLocaleTimeString()}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
 
             <div className="tabs">
                 <button className={`tab ${tab === 'list' ? 'active' : ''}`} onClick={() => setTab('list')}>Patient Records</button>
@@ -66,6 +108,9 @@ export default function PatientManagement() {
                                 <option value="critical">Critical</option>
                                 <option value="discharged">Discharged</option>
                             </select>
+                            <button className="btn btn-ghost btn-sm" onClick={loadPatients} title="Refresh">
+                                <RefreshCw size={14} />
+                            </button>
                         </div>
                     </div>
 
@@ -120,7 +165,9 @@ export default function PatientManagement() {
 
             {tab === 'register' && (
                 <div className="card">
-                    <div className="card-header"><div className="card-title"><Plus size={20} /><h3>Register New Patient</h3></div></div>
+                    <div className="card-header"><div className="card-title"><Plus size={20} /><h3>Register New Patient</h3></div>
+                        {registerMsg && <span className={`badge ${registerMsg.type === 'success' ? 'badge-success' : 'badge-danger'}`}>{registerMsg.text}</span>}
+                    </div>
                     <form onSubmit={handleRegister}>
                         <div className="grid-3 mb-16">
                             <div className="input-group"><label>First Name*</label><input className="input" required value={formData.first_name} onChange={e => setFormData({ ...formData, first_name: e.target.value })} /></div>

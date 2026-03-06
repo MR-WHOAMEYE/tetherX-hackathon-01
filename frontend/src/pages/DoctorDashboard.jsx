@@ -1,18 +1,49 @@
-import { useState, useEffect } from 'react'
-import { Stethoscope, Users, AlertTriangle, Activity, Bot, TrendingUp } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Stethoscope, Users, AlertTriangle, Activity, Bot, TrendingUp, Wifi, WifiOff, RefreshCw } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { api } from '../api'
+import { useWebSocket } from '../context/WebSocketContext'
 
 export default function DoctorDashboard() {
     const [metrics, setMetrics] = useState(null)
     const [patients, setPatients] = useState([])
     const [loading, setLoading] = useState(true)
+    const [lastUpdated, setLastUpdated] = useState(null)
+    const { isConnected, subscribe, liveMetrics } = useWebSocket()
 
-    useEffect(() => {
+    const fetchData = useCallback(() => {
         Promise.all([api.getMetrics(), api.getPatients('critical', null, 10)])
-            .then(([m, p]) => { setMetrics(m); setPatients(p) })
+            .then(([m, p]) => {
+                setMetrics(m)
+                setPatients(p)
+                setLastUpdated(new Date())
+            })
             .finally(() => setLoading(false))
     }, [])
+
+    useEffect(() => { fetchData() }, [fetchData])
+
+    // React to server-pushed live metrics
+    useEffect(() => {
+        if (!liveMetrics) return
+        setMetrics(liveMetrics.metrics)
+        setLastUpdated(new Date())
+    }, [liveMetrics])
+
+    // WS events — refresh on vitals/alert
+    useEffect(() => {
+        return subscribe('doctor-dashboard', (msg) => {
+            if (msg.type === 'vitals_update' || msg.type === 'alert' || msg.type === 'metrics_update') {
+                setTimeout(fetchData, 600)
+            }
+        })
+    }, [subscribe, fetchData])
+
+    // 30-second polling fallback
+    useEffect(() => {
+        const timer = setInterval(fetchData, 30000)
+        return () => clearInterval(timer)
+    }, [fetchData])
 
     if (loading) return <div className="loading-container"><div className="spinner" /></div>
 
@@ -24,8 +55,23 @@ export default function DoctorDashboard() {
     return (
         <div className="animate-in">
             <div className="hero-banner">
-                <h1><Stethoscope size={28} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 10 }} />Doctor Dashboard</h1>
-                <p>Your clinical overview. Monitor assigned patients, review critical cases, and access AI-powered diagnostic tools.</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                        <h1><Stethoscope size={28} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 10 }} />Doctor Dashboard</h1>
+                        <p>Your clinical overview. Monitor assigned patients, review critical cases, and access AI-powered diagnostic tools.</p>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+                        <div className={`ws-status ${isConnected ? 'connected' : 'disconnected'}`}>
+                            {isConnected ? <Wifi size={14} /> : <WifiOff size={14} />}
+                            <span>{isConnected ? 'LIVE' : 'OFFLINE'}</span>
+                        </div>
+                        {lastUpdated && (
+                            <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <RefreshCw size={10} /> {lastUpdated.toLocaleTimeString()}
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
 
             <div className="grid-4 mb-24">

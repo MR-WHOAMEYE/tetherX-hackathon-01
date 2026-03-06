@@ -1,19 +1,51 @@
-import { useState, useEffect } from 'react'
-import { Building2, Users, Activity, TrendingUp, AlertTriangle, Clock } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Building2, Users, Activity, TrendingUp, AlertTriangle, Clock, Wifi, WifiOff, RefreshCw } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LineChart, Line } from 'recharts'
 import { api } from '../api'
+import { useWebSocket } from '../context/WebSocketContext'
 
 export default function HospitalInsights() {
     const [metrics, setMetrics] = useState(null)
     const [departments, setDepartments] = useState([])
     const [admissions, setAdmissions] = useState([])
     const [loading, setLoading] = useState(true)
+    const [lastUpdated, setLastUpdated] = useState(null)
+    const { isConnected, subscribe, liveMetrics } = useWebSocket()
 
-    useEffect(() => {
+    const fetchData = useCallback(() => {
         Promise.all([api.getMetrics(), api.getDepartments(), api.getAdmissions()])
-            .then(([m, d, a]) => { setMetrics(m); setDepartments(d); setAdmissions(a) })
+            .then(([m, d, a]) => {
+                setMetrics(m)
+                setDepartments(d)
+                setAdmissions(a)
+                setLastUpdated(new Date())
+            })
             .finally(() => setLoading(false))
     }, [])
+
+    useEffect(() => { fetchData() }, [fetchData])
+
+    // React to live metrics push
+    useEffect(() => {
+        if (!liveMetrics) return
+        setMetrics(liveMetrics.metrics)
+        setLastUpdated(new Date())
+    }, [liveMetrics])
+
+    // WS subscription
+    useEffect(() => {
+        return subscribe('hospital-insights', (msg) => {
+            if (msg.type === 'metrics_update' || msg.type === 'vitals_update' || msg.type === 'alert') {
+                setTimeout(fetchData, 800)
+            }
+        })
+    }, [subscribe, fetchData])
+
+    // 30-second polling fallback
+    useEffect(() => {
+        const timer = setInterval(fetchData, 30000)
+        return () => clearInterval(timer)
+    }, [fetchData])
 
     if (loading) return <div className="loading-container"><div className="spinner" /></div>
 
@@ -21,8 +53,25 @@ export default function HospitalInsights() {
 
     return (
         <div className="animate-in">
-            <div className="hero-banner"><h1><Building2 size={28} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 10 }} />Hospital Intelligence Dashboard</h1>
-                <p>Real-time hospital operations metrics. Monitor capacity, staffing, patient flow, and department performance at a glance.</p></div>
+            <div className="hero-banner">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                        <h1><Building2 size={28} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 10 }} />Hospital Intelligence Dashboard</h1>
+                        <p>Real-time hospital operations metrics. Monitor capacity, staffing, patient flow, and department performance at a glance.</p>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+                        <div className={`ws-status ${isConnected ? 'connected' : 'disconnected'}`}>
+                            {isConnected ? <Wifi size={14} /> : <WifiOff size={14} />}
+                            <span>{isConnected ? 'LIVE' : 'OFFLINE'}</span>
+                        </div>
+                        {lastUpdated && (
+                            <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <RefreshCw size={10} /> {lastUpdated.toLocaleTimeString()}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
 
             <div className="grid-4 mb-24">
                 {[

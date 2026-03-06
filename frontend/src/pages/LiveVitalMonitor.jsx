@@ -5,10 +5,10 @@ import { api } from '../api'
 import { useWebSocket } from '../context/WebSocketContext'
 
 const VITAL_CHARTS = [
-    { key: 'heart_rate', label: 'Heart Rate', unit: 'bpm', color: '#EF4444', icon: HeartPulse, min: 50, max: 120, refLines: [{ y: 60, label: 'Low' }, { y: 100, label: 'High' }] },
-    { key: 'oxygen_level', label: 'Oxygen Level', unit: '%', color: '#3B82F6', icon: Droplets, min: 85, max: 100, refLines: [{ y: 90, label: 'Critical' }, { y: 95, label: 'Low' }] },
-    { key: 'blood_pressure_sys', label: 'Blood Pressure (Sys)', unit: 'mmHg', color: '#7C3AED', icon: HeartPulse, min: 70, max: 200, refLines: [{ y: 90, label: 'Low' }, { y: 140, label: 'High' }] },
-    { key: 'respiratory_rate', label: 'Respiratory Rate', unit: '/min', color: '#10B981', icon: Wind, min: 5, max: 35, refLines: [{ y: 12, label: 'Low' }, { y: 24, label: 'High' }] },
+    { key: 'heart_rate', label: 'Heart Rate', unit: 'bpm', color: '#FF0A54', icon: HeartPulse, min: 50, max: 120, refLines: [{ y: 60, label: 'Low' }, { y: 100, label: 'High' }] },
+    { key: 'oxygen_level', label: 'Oxygen Level', unit: '%', color: '#00F0FF', icon: Droplets, min: 85, max: 100, refLines: [{ y: 90, label: 'Critical' }, { y: 95, label: 'Low' }] },
+    { key: 'blood_pressure_sys', label: 'Blood Pressure (Sys)', unit: 'mmHg', color: '#8B5CF6', icon: HeartPulse, min: 70, max: 200, refLines: [{ y: 90, label: 'Low' }, { y: 140, label: 'High' }] },
+    { key: 'respiratory_rate', label: 'Respiratory Rate', unit: '/min', color: '#00FF9D', icon: Wind, min: 5, max: 35, refLines: [{ y: 12, label: 'Low' }, { y: 24, label: 'High' }] },
 ]
 
 export default function LiveVitalMonitor() {
@@ -117,7 +117,7 @@ export default function LiveVitalMonitor() {
                                 <YAxis domain={[v.min, v.max]} tick={{ fontSize: 10 }} />
                                 <Tooltip />
                                 {v.refLines.map((ref, i) => (
-                                    <ReferenceLine key={i} y={ref.y} stroke="#EF4444" strokeDasharray="5 5" label={{ value: ref.label, position: 'right', fontSize: 10 }} />
+                                    <ReferenceLine key={i} y={ref.y} stroke="#FF0A54" strokeDasharray="5 5" label={{ value: ref.label, position: 'right', fontSize: 10 }} />
                                 ))}
                                 <Line type="monotone" dataKey={v.key} stroke={v.color} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
                             </LineChart>

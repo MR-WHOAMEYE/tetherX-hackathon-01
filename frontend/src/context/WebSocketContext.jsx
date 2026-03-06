@@ -7,6 +7,7 @@ export function WebSocketProvider({ children }) {
     const [lastEvent, setLastEvent] = useState(null)
     const [events, setEvents] = useState([])
     const [alerts, setAlerts] = useState([])
+    const [liveMetrics, setLiveMetrics] = useState(null)
     const wsRef = useRef(null)
     const reconnectRef = useRef(null)
     const listenersRef = useRef(new Map())
@@ -36,6 +37,9 @@ export function WebSocketProvider({ children }) {
                 }
                 if (msg.type === 'alert_acknowledged') {
                     setAlerts(prev => prev.filter(a => a.id !== msg.data.id))
+                }
+                if (msg.type === 'metrics_update') {
+                    setLiveMetrics(msg.data)
                 }
 
                 // Notify all listeners
@@ -81,7 +85,7 @@ export function WebSocketProvider({ children }) {
     }, [])
 
     return (
-        <WebSocketContext.Provider value={{ isConnected, lastEvent, events, alerts, subscribe, send }}>
+        <WebSocketContext.Provider value={{ isConnected, lastEvent, events, alerts, liveMetrics, subscribe, send }}>
             {children}
         </WebSocketContext.Provider>
     )

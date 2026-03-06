@@ -62,7 +62,7 @@ export default function Settings({ user }) {
                             <label style={{ position: 'relative', display: 'inline-block', width: 48, height: 26, cursor: 'pointer' }}>
                                 <input type="checkbox" checked={notifications[n.k]} onChange={e => setNotifications({ ...notifications, [n.k]: e.target.checked })}
                                     style={{ opacity: 0, width: 0, height: 0 }} />
-                                <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, background: notifications[n.k] ? 'var(--primary)' : '#CBD5E1', borderRadius: 26, transition: '0.3s' }}>
+                                <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, background: notifications[n.k] ? 'var(--primary)' : 'rgba(255,255,255,0.1)', borderRadius: 26, transition: '0.3s' }}>
                                     <span style={{ position: 'absolute', content: '', height: 20, width: 20, left: notifications[n.k] ? 24 : 3, bottom: 3, background: 'white', borderRadius: '50%', transition: '0.3s' }} />
                                 </span>
                             </label>

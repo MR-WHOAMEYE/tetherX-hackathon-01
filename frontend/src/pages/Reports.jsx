@@ -27,11 +27,11 @@ export default function Reports() {
                 <p>Generate and download comprehensive reports across clinical operations, patient outcomes, and hospital performance.</p></div>
 
             <div className="grid-3 mb-24">
-                <div className="stat-card animate-in stagger-1"><div className="stat-icon" style={{ background: '#EBF4FF', color: '#0A5EB5' }}><FileText size={22} /></div>
+                <div className="stat-card animate-in stagger-1"><div className="stat-icon" style={{ background: 'rgba(0, 240, 255, 0.1)', color: '#00F0FF' }}><FileText size={22} /></div>
                     <div className="stat-value">6</div><div className="stat-label">Available Reports</div></div>
-                <div className="stat-card animate-in stagger-2"><div className="stat-icon" style={{ background: '#D1FAE5', color: '#059669' }}><BarChart3 size={22} /></div>
+                <div className="stat-card animate-in stagger-2"><div className="stat-icon" style={{ background: 'rgba(0, 255, 157, 0.1)', color: '#00FF9D' }}><BarChart3 size={22} /></div>
                     <div className="stat-value">{metrics?.total_patients}</div><div className="stat-label">Patients Covered</div></div>
-                <div className="stat-card animate-in stagger-3"><div className="stat-icon" style={{ background: '#F3E8FF', color: '#7C3AED' }}><Download size={22} /></div>
+                <div className="stat-card animate-in stagger-3"><div className="stat-icon" style={{ background: 'rgba(139, 92, 246, 0.1)', color: '#8B5CF6' }}><Download size={22} /></div>
                     <div className="stat-value">PDF</div><div className="stat-label">Export Format</div></div>
             </div>
 

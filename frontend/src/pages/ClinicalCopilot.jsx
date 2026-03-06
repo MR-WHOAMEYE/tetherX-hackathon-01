@@ -30,7 +30,7 @@ export default function ClinicalCopilot() {
         finally { setLoading(false) }
     }
 
-    const getConfColor = (c) => c > 70 ? '#EF4444' : c > 50 ? '#EA580C' : c > 30 ? '#CA8A04' : '#10B981'
+    const getConfColor = (c) => c > 70 ? '#FF0A54' : c > 50 ? '#EA580C' : c > 30 ? '#CA8A04' : '#00FF9D'
 
     return (
         <div className="animate-in">
@@ -76,7 +76,7 @@ export default function ClinicalCopilot() {
             {result && (
                 <div className="animate-in">
                     {result.clinical_notes?.map((note, i) => (
-                        <div key={i} className="card mb-8" style={{ padding: '14px 20px', borderLeft: `4px solid ${note.includes('URGENT') ? '#EF4444' : note.includes('High') ? '#F59E0B' : '#3B82F6'}` }}>
+                        <div key={i} className="card mb-8" style={{ padding: '14px 20px', borderLeft: `4px solid ${note.includes('URGENT') ? '#FF0A54' : note.includes('High') ? '#FFC400' : '#00F0FF'}` }}>
                             <span className="text-sm">{note.includes('URGENT') ? '⚠️' : '💡'} {note}</span>
                         </div>
                     ))}
