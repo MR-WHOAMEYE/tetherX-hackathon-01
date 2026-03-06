@@ -14,10 +14,24 @@ try:
     from app import app
 except Exception as e:
     # If the main app fails to load, create a minimal app that reports the error
-    from fastapi import FastAPI
+    from fastapi import FastAPI, Request
+    from fastapi.responses import JSONResponse
     app = FastAPI()
     _startup_error = traceback.format_exc()
+    _startup_exception = repr(e)
 
-    @app.get("/{path:path}")
-    async def startup_error(path: str = ""):
-        return {"error": "Application failed to start", "details": _startup_error}
+    @app.api_route(
+        "/{path:path}",
+        methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+    )
+    async def startup_error(path: str = "", request: Request = None):
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "Application failed to start",
+                "exception": _startup_exception,
+                "method": request.method if request else None,
+                "path": path,
+                "details": _startup_error,
+            },
+        )
