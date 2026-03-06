@@ -1,8 +1,12 @@
 import { useState } from 'react'
-import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { WebSocketProvider } from './context/WebSocketContext'
 import Sidebar from './components/Sidebar'
+import AlertNotification from './components/AlertNotification'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
+import CommandCenter from './pages/CommandCenter'
+import LiveVitalMonitor from './pages/LiveVitalMonitor'
 import ClinicalCopilot from './pages/ClinicalCopilot'
 import PatientManagement from './pages/PatientManagement'
 import DoctorDashboard from './pages/DoctorDashboard'
@@ -41,30 +45,35 @@ export default function App() {
   }
 
   return (
-    <div className="app-layout">
-      <Sidebar user={user} onLogout={handleLogout} />
-      <main className="main-content">
-        <Routes>
-          <Route path="/" element={<Dashboard user={user} />} />
-          <Route path="/copilot" element={<ClinicalCopilot />} />
-          <Route path="/patients" element={<PatientManagement />} />
-          <Route path="/doctor" element={<DoctorDashboard />} />
-          <Route path="/nurse" element={<NurseDashboard />} />
-          <Route path="/portal" element={<PatientPortal user={user} />} />
-          <Route path="/triage" element={<Triage />} />
-          <Route path="/risk" element={<RiskPrediction />} />
-          <Route path="/recommendations" element={<Recommendations />} />
-          <Route path="/drugs" element={<DrugInteractions />} />
-          <Route path="/similarity" element={<CaseSimilarity />} />
-          <Route path="/outcomes" element={<TreatmentOutcomes />} />
-          <Route path="/timeline" element={<PatientTimeline />} />
-          <Route path="/followup" element={<FollowupCare />} />
-          <Route path="/insights" element={<HospitalInsights />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/settings" element={<Settings user={user} />} />
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </main>
-    </div>
+    <WebSocketProvider>
+      <div className="app-layout">
+        <Sidebar user={user} onLogout={handleLogout} />
+        <AlertNotification />
+        <main className="main-content">
+          <Routes>
+            <Route path="/" element={<Dashboard user={user} />} />
+            <Route path="/command-center" element={<CommandCenter />} />
+            <Route path="/live-vitals" element={<LiveVitalMonitor />} />
+            <Route path="/copilot" element={<ClinicalCopilot />} />
+            <Route path="/patients" element={<PatientManagement />} />
+            <Route path="/doctor" element={<DoctorDashboard />} />
+            <Route path="/nurse" element={<NurseDashboard />} />
+            <Route path="/portal" element={<PatientPortal user={user} />} />
+            <Route path="/triage" element={<Triage />} />
+            <Route path="/risk" element={<RiskPrediction />} />
+            <Route path="/recommendations" element={<Recommendations />} />
+            <Route path="/drugs" element={<DrugInteractions />} />
+            <Route path="/similarity" element={<CaseSimilarity />} />
+            <Route path="/outcomes" element={<TreatmentOutcomes />} />
+            <Route path="/timeline" element={<PatientTimeline />} />
+            <Route path="/followup" element={<FollowupCare />} />
+            <Route path="/insights" element={<HospitalInsights />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/settings" element={<Settings user={user} />} />
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </main>
+      </div>
+    </WebSocketProvider>
   )
 }

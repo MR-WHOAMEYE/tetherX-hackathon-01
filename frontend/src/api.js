@@ -90,4 +90,35 @@ export const api = {
     getMetrics: () => request('/dashboard/metrics'),
     getDepartments: () => request('/dashboard/departments'),
     getAdmissions: () => request('/dashboard/admissions'),
+
+    // Real-Time Events
+    getEvents: (limit = 50, eventType = null) => {
+        const params = new URLSearchParams({ limit });
+        if (eventType) params.set('event_type', eventType);
+        return request(`/events?${params}`);
+    },
+
+    // Alerts
+    getAlerts: (limit = 50) => request(`/alerts?limit=${limit}`),
+    getAlertStats: () => request('/alerts/stats'),
+    acknowledgeAlert: (id) => request(`/alerts/${id}/acknowledge`, { method: 'PUT' }),
+
+    // Staff Activity
+    getStaffActivity: (limit = 50) => request(`/staff-activity?limit=${limit}`),
+
+    // Command Center
+    getCommandCenterMetrics: () => request('/command-center/metrics'),
+    getPriorityQueue: (limit = 20) => request(`/command-center/priority-queue?limit=${limit}`),
+    getWorkload: () => request('/command-center/workload'),
+
+    // Live Vitals
+    getLiveVitals: (pid) => request(`/vitals/${pid}/live`),
+    getVitalsTrend: (pid, limit = 30) => request(`/vitals/${pid}/trend?limit=${limit}`),
+    getAllLatestVitals: () => request('/vitals/all/latest'),
+
+    // Risk History
+    getRiskHistory: (pid, limit = 20) => request(`/risk/${pid}/history?limit=${limit}`),
+
+    // AI Insights
+    getAIInsights: (limit = 10) => request(`/ai-insights?limit=${limit}`),
 };

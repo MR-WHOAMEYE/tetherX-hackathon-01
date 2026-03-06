@@ -1,13 +1,15 @@
 """
 FastAPI Backend — Clinical Decision Support Platform
 All API endpoints for the React frontend.
+Real-Time Clinical Intelligence Platform v3.0
 """
 import json
 import sys
 import os
+import asyncio
 sys.path.insert(0, os.path.dirname(__file__))
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List
@@ -34,6 +36,15 @@ from services.followup_service import (
     cancel_followup, get_followup_stats, generate_medication_reminders
 )
 from services.dashboard_service import get_hospital_metrics, get_department_stats, get_hourly_admissions
+from services.websocket_manager import manager as ws_manager
+from services.event_stream_service import log_event, get_recent_events
+from services.alert_engine import check_vitals_thresholds, check_risk_threshold, get_active_alerts, acknowledge_alert, get_alert_stats
+from services.vitals_monitor_service import get_live_vitals, get_vitals_trend, get_all_patients_latest_vitals
+from services.activity_tracker import log_activity, get_recent_activities
+from services.risk_recalculation_service import (
+    recalculate_risk, get_risk_history, get_patient_priority_queue,
+    get_command_center_metrics, get_workload_analysis, get_ai_insights
+)
 
 # Initialize
 init_db()
@@ -146,8 +157,64 @@ class VitalsCreate(BaseModel):
     recorded_by: str = ""
 
 @app.post("/api/vitals")
-def create_vitals(data: VitalsCreate):
-    add_vitals(data.model_dump())
+async def create_vitals(data: VitalsCreate):
+    vitals_dict = data.model_dump()
+    add_vitals(vitals_dict)
+
+    # Real-time processing pipeline
+    try:
+        # 1. Log clinical event
+        event = log_event(
+            event_type="vitals_update",
+            title=f"Vitals recorded for patient {data.patient_id}",
+            description=f"HR:{data.heart_rate} O2:{data.oxygen_level}% BP:{data.blood_pressure_sys}/{data.blood_pressure_dia}",
+            patient_id=data.patient_id,
+            staff_name=data.recorded_by or "System",
+            severity="info"
+        )
+
+        # 2. Check alert thresholds
+        alerts = check_vitals_thresholds(data.patient_id, vitals_dict)
+
+        # 3. Recalculate risk
+        risk = recalculate_risk(data.patient_id, vitals_dict)
+
+        # 4. Check risk threshold for alerts
+        if risk and risk["risk_score"] >= 70:
+            risk_alert = check_risk_threshold(data.patient_id, risk["risk_score"])
+            if risk_alert:
+                alerts.append(risk_alert)
+
+        # 5. Log staff activity
+        if data.recorded_by:
+            log_activity(
+                staff_name=data.recorded_by,
+                staff_role="nurse",
+                action_type="vitals_recording",
+                description=f"Recorded vitals for patient {data.patient_id}",
+                patient_id=data.patient_id
+            )
+
+        # 6. Broadcast via WebSocket
+        await ws_manager.broadcast({
+            "type": "vitals_update",
+            "data": {"patient_id": data.patient_id, "vitals": vitals_dict, "risk": risk, "alerts": alerts}
+        })
+
+        # Broadcast individual alerts
+        for alert in alerts:
+            alert_event = log_event(
+                event_type="alert",
+                title=alert["title"],
+                description=alert["description"],
+                patient_id=data.patient_id,
+                severity="critical"
+            )
+            await ws_manager.broadcast({"type": "alert", "data": alert})
+
+    except Exception as e:
+        print(f"Real-time processing error: {e}")
+
     return {"status": "recorded"}
 
 # ── Labs ────────────────────────────────────────────────────────────────────
@@ -367,6 +434,113 @@ def dashboard_departments():
 @app.get("/api/dashboard/admissions")
 def dashboard_admissions():
     return get_hourly_admissions()
+
+
+# ── WebSocket ────────────────────────────────────────────────────────────────
+@app.websocket("/ws/events")
+async def websocket_endpoint(websocket: WebSocket):
+    await ws_manager.connect(websocket)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            # Echo back for ping/pong keepalive
+            await websocket.send_text(json.dumps({"type": "pong", "data": data}))
+    except WebSocketDisconnect:
+        ws_manager.disconnect(websocket)
+
+
+# ── Real-Time Event Stream ──────────────────────────────────────────────────
+@app.get("/api/events")
+def list_events(limit: int = 50, event_type: Optional[str] = None):
+    return get_recent_events(limit, event_type)
+
+
+# ── Alerts ───────────────────────────────────────────────────────────────────
+@app.get("/api/alerts")
+def list_alerts(limit: int = 50):
+    return get_active_alerts(limit)
+
+@app.get("/api/alerts/stats")
+def alert_stats():
+    return get_alert_stats()
+
+@app.put("/api/alerts/{alert_id}/acknowledge")
+async def ack_alert(alert_id: int, acknowledged_by: str = "System"):
+    result = acknowledge_alert(alert_id, acknowledged_by)
+    await ws_manager.broadcast({"type": "alert_acknowledged", "data": result})
+    return result
+
+
+# ── Staff Activity ──────────────────────────────────────────────────────────
+@app.get("/api/staff-activity")
+def list_staff_activity(limit: int = 50, staff_role: Optional[str] = None):
+    return get_recent_activities(limit, staff_role)
+
+
+# ── Command Center ──────────────────────────────────────────────────────────
+@app.get("/api/command-center/metrics")
+def command_center_metrics():
+    return get_command_center_metrics()
+
+@app.get("/api/command-center/priority-queue")
+def priority_queue(limit: int = 20):
+    return get_patient_priority_queue(limit)
+
+@app.get("/api/command-center/workload")
+def workload():
+    return get_workload_analysis()
+
+
+# ── Live Vitals ─────────────────────────────────────────────────────────────
+@app.get("/api/vitals/{patient_id}/live")
+def live_vitals(patient_id: str):
+    result = get_live_vitals(patient_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="No vitals found")
+    return result
+
+@app.get("/api/vitals/{patient_id}/trend")
+def vitals_trend(patient_id: str, limit: int = 30):
+    return get_vitals_trend(patient_id, limit)
+
+@app.get("/api/vitals/all/latest")
+def all_latest_vitals():
+    return get_all_patients_latest_vitals()
+
+
+# ── Risk History ────────────────────────────────────────────────────────────
+@app.get("/api/risk/{patient_id}/history")
+def risk_history_endpoint(patient_id: str, limit: int = 20):
+    return get_risk_history(patient_id, limit)
+
+
+# ── AI Insights ─────────────────────────────────────────────────────────────
+@app.get("/api/ai-insights")
+def ai_insights(limit: int = 10):
+    return get_ai_insights(limit)
+
+
+# ── Seed initial risk calculations ──────────────────────────────────────────
+@app.on_event("startup")
+async def startup_seed_risks():
+    """Seed risk calculations for existing patients on startup."""
+    try:
+        from database.db import get_connection
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT patient_id FROM patients WHERE status IN ('active','critical','monitoring') LIMIT 50")
+        patients = cursor.fetchall()
+        conn.close()
+        for p in patients:
+            try:
+                recalculate_risk(p["patient_id"])
+            except Exception:
+                pass
+        # Seed some initial events
+        log_event("system", "System Started", "ClinIQ Real-Time Intelligence Platform initialized", severity="info")
+        log_event("system", "Risk Engine Active", f"Calculated risk scores for {len(patients)} patients", severity="info")
+    except Exception as e:
+        print(f"Startup seed error: {e}")
 
 
 if __name__ == "__main__":

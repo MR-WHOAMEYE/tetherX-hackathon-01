@@ -170,6 +170,57 @@ def init_db():
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (patient_id) REFERENCES patients(patient_id)
     );
+
+    CREATE TABLE IF NOT EXISTS clinical_events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        event_type TEXT NOT NULL,
+        severity TEXT DEFAULT 'info' CHECK(severity IN ('info','warning','critical')),
+        patient_id TEXT,
+        staff_name TEXT,
+        title TEXT NOT NULL,
+        description TEXT,
+        metadata TEXT DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS alerts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient_id TEXT NOT NULL,
+        alert_type TEXT NOT NULL,
+        severity TEXT NOT NULL CHECK(severity IN ('warning','critical','emergency')),
+        title TEXT NOT NULL,
+        description TEXT,
+        threshold_value REAL,
+        actual_value REAL,
+        status TEXT DEFAULT 'active' CHECK(status IN ('active','acknowledged','resolved')),
+        acknowledged_by TEXT,
+        acknowledged_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (patient_id) REFERENCES patients(patient_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS staff_activity (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        staff_name TEXT NOT NULL,
+        staff_role TEXT NOT NULL,
+        action_type TEXT NOT NULL,
+        patient_id TEXT,
+        description TEXT NOT NULL,
+        metadata TEXT DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS risk_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient_id TEXT NOT NULL,
+        risk_score REAL NOT NULL,
+        severity_score REAL,
+        deterioration_risk REAL,
+        triage_priority TEXT,
+        factors TEXT DEFAULT '{}',
+        calculated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (patient_id) REFERENCES patients(patient_id)
+    );
     """)
 
     conn.commit()
