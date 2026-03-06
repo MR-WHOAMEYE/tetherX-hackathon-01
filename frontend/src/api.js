@@ -2,7 +2,7 @@
 const getApiUrl = () => {
     if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL + '/api';
     if (import.meta.env.DEV) return 'http://localhost:8000/api';
-    return '/api'; // Production fallback (same origin on Vercel)
+    return '/api'; // Same origin on Vercel
 };
 
 const API = getApiUrl();
