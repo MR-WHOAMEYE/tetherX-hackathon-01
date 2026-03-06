@@ -1,27 +1,21 @@
 {
     "version": 2,
-    "buildCommand": "cd frontend && npm install && npm run build",
+    "installCommand": "npm install --prefix frontend",
+    "buildCommand": "npm run build --prefix frontend",
     "outputDirectory": "frontend/dist",
     "functions": {
-        "api/*.py": {
-            "runtime": "@vercel/python@3.12"
+        "api/[...path].py": {
+            "runtime": "@vercel/python@4.3.1"
         }
     },
     "rewrites": [
         {
-            "source": "/api/(.*)",
-            "destination": "/api/index.py"
-        },
-        {
-            "source": "/ws/(.*)",
-            "destination": "/api/index.py"
-        },
-        {
-            "source": "/((?!api|ws).*)",
+            "source": "/((?!api(?:/|$)).*)",
             "destination": "/index.html"
         }
     ],
     "env": {
         "VERCEL": "1"
-    }
+    },
+    "devCommand": "uvicorn app:app --host 127.0.0.1 --port $PORT --reload"
 }
