@@ -170,56 +170,6 @@ def init_db():
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (patient_id) REFERENCES patients(patient_id)
     );
-
-    CREATE TABLE IF NOT EXISTS clinical_events (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        event_type TEXT NOT NULL,
-        severity TEXT DEFAULT 'info' CHECK(severity IN ('info','warning','critical','success')),
-        title TEXT NOT NULL,
-        description TEXT,
-        patient_id TEXT,
-        staff_name TEXT,
-        department TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE TABLE IF NOT EXISTS alerts (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        alert_type TEXT NOT NULL,
-        severity TEXT DEFAULT 'warning' CHECK(severity IN ('info','warning','critical')),
-        title TEXT NOT NULL,
-        message TEXT,
-        patient_id TEXT,
-        patient_name TEXT,
-        threshold_value TEXT,
-        actual_value TEXT,
-        acknowledged INTEGER DEFAULT 0,
-        acknowledged_by TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE TABLE IF NOT EXISTS staff_activity (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        staff_name TEXT NOT NULL,
-        staff_role TEXT NOT NULL,
-        action TEXT NOT NULL,
-        details TEXT,
-        patient_id TEXT,
-        department TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE TABLE IF NOT EXISTS risk_history (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        patient_id TEXT NOT NULL,
-        deterioration_risk REAL,
-        icu_risk REAL,
-        complication_risk REAL,
-        severity_score INTEGER,
-        risk_level TEXT,
-        calculated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (patient_id) REFERENCES patients(patient_id)
-    );
     """)
 
     conn.commit()
